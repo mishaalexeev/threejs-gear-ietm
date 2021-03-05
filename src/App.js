@@ -1,5 +1,4 @@
 import React, {useRef, useEffect} from 'react';
-import logo from './logo.svg';
 import './App.css';
 import { Row, Col, Divider } from 'antd';
 import ModelViewer from './components/model-viewer';
