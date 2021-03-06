@@ -62,7 +62,7 @@ class ModelViewer extends Component {
 
                             let mat = m.material.clone();
                             m.material = mat.clone();
-                            console.log(m.parent.name);
+                            //console.log(m.parent.name);
 
                             highlightData.originalMaterials[m.name] = (m).material;
 
@@ -116,7 +116,7 @@ class ModelViewer extends Component {
 
     onMouseMove = (event) => {
         const { viewerData } = this.props.stores.modelStore;
-        let { hoveredPart, selectedPart } = this.props.stores.modelStore;
+        let { hoveredPart, selectedPart, hiddenObjects } = this.props.stores.modelStore;
         const { renderer, camera, highlightData } = viewerData;
         let { pickableObjects, intersectedObject, raycaster, intersects } = highlightData;
         
@@ -133,14 +133,24 @@ class ModelViewer extends Component {
         intersects = raycaster.intersectObjects(pickableObjects, false);
 
         if (intersects.length > 0) {
-            intersectedObject = intersects[0].object;
-            this.mount.style.cursor = "pointer";
+            const intersect = intersects.find((el) => {
+                return hiddenObjects.indexOf(el.object) === -1;
+            });
+            if (typeof intersect === "undefined"){
+                this.mount.style.cursor = "default";
+                intersectedObject = null;
+            }
+            else {
+                this.mount.style.cursor = "pointer";
+                intersectedObject = intersect.object;
+            }
+
         } else {
             this.mount.style.cursor = "default";
             intersectedObject = null;
         }
 
-        // TODO исправить подсвечивания у выделенного объекта
+
         pickableObjects.forEach((o, i) => {
             const isSelected = o === selectedPart;
             if (isSelected){
@@ -170,6 +180,7 @@ class ModelViewer extends Component {
     onModelClick = (event) => {
         const { modelStore } = this.props.stores;
         const { renderer, camera, highlightData } = modelStore.viewerData;
+        const { hiddenObjects } = modelStore;
         let { pickableObjects, intersectedObject, raycaster, intersects } = highlightData;
 
         const offset = {
@@ -184,12 +195,26 @@ class ModelViewer extends Component {
         intersects = raycaster.intersectObjects(pickableObjects, false);
 
         if (intersects.length > 0) {
-            intersectedObject = intersects[0].object;
+            const intersect = intersects.find((el) => {
+                return hiddenObjects.indexOf(el.object) === -1;
+            });
+
+            if (typeof intersect === "undefined"){
+                this.mount.style.cursor = "default";
+                intersectedObject = null;
+            }
+            else {
+                this.mount.style.cursor = "pointer";
+                intersectedObject = intersect.object;
+            }
+
         } else {
             intersectedObject = null;
             return
         }
-        
+
+
+
         pickableObjects.forEach((o, i) => {
             if (intersectedObject && intersectedObject.name === o.name) {
                 modelStore.selectedPart = pickableObjects[i];
@@ -208,11 +233,72 @@ class ModelViewer extends Component {
         alert();
     }
 
+    menuItemClicked = (e) => {
+        const { modelStore } = this.props.stores;
+        const { hiddenObjects } = modelStore;
+        const { renderer, camera, highlightData } = modelStore.viewerData;
+        let { pickableObjects, intersectedObject, raycaster, intersects } = highlightData;
+
+        const offset = {
+            left: document.querySelector(".ant-col-4").offsetWidth,
+        }
+
+
+        switch (e.key) {
+
+            case "1":
+                const event = e.domEvent;
+                raycaster.setFromCamera({
+                    x: ((event.clientX - offset.left) / renderer.domElement.clientWidth) * 2 - 1,
+                    y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
+                    z: 0.5
+                }, camera);
+                intersects = raycaster.intersectObjects(pickableObjects, false);
+
+
+                if (intersects.length > 0) {
+                    const intersect = intersects.find((el) => {
+                        return hiddenObjects.indexOf(el.object) === -1;
+                    });
+
+                    if (typeof intersect === "undefined"){
+                        this.mount.style.cursor = "default";
+                        intersectedObject = null;
+                    }
+                    else {
+                        this.mount.style.cursor = "pointer";
+                        intersectedObject = intersect.object;
+                        hiddenObjects.push(intersectedObject);
+                    }
+
+                } else {
+                    intersectedObject = null;
+                    return
+                }
+
+                pickableObjects.forEach((o, i) => {
+                    if (intersectedObject && intersectedObject.name === o.name) {
+                        pickableObjects[i].parent.visible = false;
+
+                    } else{
+                        pickableObjects[i].material.color = new THREE.Color(1,1,1);
+                    }
+                })
+
+            //Изоляция детали
+            case "2":
+
+            //Выделение детали
+            case "3":
+
+        }
+    }
+
     render() {
         const menu = (
-            <Menu>
+            <Menu onClick={this.menuItemClicked}>
               <Menu.Item key="1" icon={<EyeInvisibleOutlined/>}>Скрыть</Menu.Item>
-              <Menu.Item key="2" icon={<StarFilled />}>Сфокусироваться</Menu.Item>
+              <Menu.Item key="2" icon={<StarFilled />}>Изолировать</Menu.Item>
               <Menu.Item key="3" icon={<StarTwoTone />}>Выделить</Menu.Item>
             </Menu>
           );

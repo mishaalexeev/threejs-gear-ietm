@@ -24,6 +24,7 @@ export default class ModelStore {
         }
     selectedPart = {};
     hoveredPart = {};
+    hiddenObjects = [];
         
 
     initializeViewer(window) {
@@ -55,6 +56,7 @@ export default class ModelStore {
             modelsData: observable,
             viewerData: observable,
             selectedPart: observable,
+            hiddenObjects: observable,
             hoveredPart: observable,
             initializeViewer: action
         })
