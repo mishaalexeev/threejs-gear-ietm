@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 import withStores from "../../hocs/withStores";
 
@@ -15,7 +14,8 @@ class ModelViewer extends Component {
         super(props);
         this.state = {
             widthCoefficient: 0.625,
-            disabled: true
+            disabled: true,
+            eventDropdownMenu: null
         }
     }
 
@@ -116,7 +116,7 @@ class ModelViewer extends Component {
 
     onMouseMove = (event) => {
         const { viewerData } = this.props.stores.modelStore;
-        let { hoveredPart, selectedPart, hiddenObjects } = this.props.stores.modelStore;
+        let { selectedPart, hiddenObjects } = this.props.stores.modelStore;
         const { renderer, camera, highlightData } = viewerData;
         let { pickableObjects, intersectedObject, raycaster, intersects } = highlightData;
         
@@ -160,7 +160,7 @@ class ModelViewer extends Component {
             if (intersectedObject && intersectedObject.name === o.name ) {
                 o.material.transparent = true;
                 o.material.opacity = 0.8;
-                hoveredPart = intersectedObject;
+                this.props.stores.modelStore.hoveredPart = intersectedObject;
                 
                 if (intersectedObject === selectedPart){
                     return;
@@ -243,7 +243,6 @@ class ModelViewer extends Component {
             left: document.querySelector(".ant-col-4").offsetWidth,
         }
 
-
         switch (e.key) {
 
             case "1":
@@ -284,12 +283,21 @@ class ModelViewer extends Component {
                         pickableObjects[i].material.color = new THREE.Color(1,1,1);
                     }
                 })
-
+                break;
             //Изоляция детали
             case "2":
-
+                break;
             //Выделение детали
             case "3":
+                break;
+            default:
+                break;
+
+        }
+    }
+
+    dropdownVisibleChange = (flag) => {
+        if (flag){
 
         }
     }
@@ -304,7 +312,8 @@ class ModelViewer extends Component {
           );
 
         return (
-            <Dropdown overlay={menu} trigger={['contextMenu']}>
+            <Dropdown overlay={menu} trigger={['contextMenu']}
+                      onVisibleChange={this.dropdownVisibleChange}>
                 <div ref={ref => (this.mount = ref)} onMouseMove={this.onMouseMove} onDoubleClick={this.onModelClick}/>
             </Dropdown>
         )

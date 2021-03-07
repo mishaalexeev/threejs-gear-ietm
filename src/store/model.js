@@ -1,4 +1,4 @@
-import { observable, computed, makeObservable, action } from "mobx";
+import { observable, makeObservable, action } from "mobx";
 import * as THREE from "three";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -43,7 +43,7 @@ export default class ModelStore {
         this.viewerData.controls = new OrbitControls(this.viewerData.camera, this.viewerData.renderer.domElement);
 
 
-        this.viewerData.highlightData.pickableObjects = new Array();
+        this.viewerData.highlightData.pickableObjects = [];
         this.viewerData.highlightData.originalMaterials = {};
         this.viewerData.highlightData.highlightedMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0x00ff00 });
         this.viewerData.highlightData.raycaster = new THREE.Raycaster();
