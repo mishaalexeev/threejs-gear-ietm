@@ -40,31 +40,28 @@ class ModelViewer extends Component {
 
         this.mount.appendChild(renderer.domElement);
         const loader = new GLTFLoader()
-        loader.setDRACOLoader(new DRACOLoader().setDecoderPath('/draco/'));
+        loader.setDRACOLoader(new DRACOLoader().setDecoderPath('three/examples/js/libs/draco/'));
         new Promise((res, rej) => {
             loader.load(
-                '/models/34.glb',
+                '/models/Редуктор в гараже 2-2.glb',
                 function (gltf) {
                     gltf.scene.traverse(function (child) {
                         if ((child).isMesh) {
-                            let m = child
-                            //the sphere and plane will not be mouse picked. THe plane will receive shadows while everything else casts shadows.
+                            const m = child;
                             m.castShadow = true;
                             highlightData.pickableObjects.push(m);
                             //store reference to original materials for later
-
-                            
                             m.material.polygonOffset = true;
                             m.depthTest = true;
                             m.material.polygonOffsetFactor = 0.5;
                             m.material.polygonOffsetUnits = 1;
                             m.material.color.convertSRGBToLinear();
 
-                            let mat = m.material.clone();
+                            const mat = m.material.clone();
                             m.material = mat.clone();
                             //console.log(m.parent.name);
 
-                            highlightData.originalMaterials[m.name] = (m).material;
+                            highlightData.originalMaterials[m.id] = mat;
 
                         }
                     })
@@ -154,24 +151,26 @@ class ModelViewer extends Component {
         pickableObjects.forEach((o, i) => {
             const isSelected = o === selectedPart;
             if (isSelected){
-                o.material.transparent = false;
+                //o.material.transparent = false;
             }
 
             if (intersectedObject && intersectedObject.name === o.name ) {
                 o.material.transparent = true;
                 o.material.opacity = 0.8;
-                this.props.stores.modelStore.hoveredPart = intersectedObject;
+                //this.props.stores.modelStore.hoveredPart = intersectedObject;
                 
                 if (intersectedObject === selectedPart){
                     return;
                 }
-                o.material.color = new THREE.Color("skyblue");
+                o.material.color = new THREE.Color("blue");
             } else {
                 if (o === selectedPart){
                     return;
                 }
-                // ToDo исправить свет из массива чтобы брался
-                o.material.color = new THREE.Color(1, 1,1);
+
+                o.material.color = (highlightData.originalMaterials[
+                    o.id
+                    ]).color;
                 o.material.transparent = false;
             }
         })
@@ -213,8 +212,6 @@ class ModelViewer extends Component {
             return
         }
 
-
-
         pickableObjects.forEach((o, i) => {
             if (intersectedObject && intersectedObject.name === o.name) {
                 modelStore.selectedPart = pickableObjects[i];
@@ -224,7 +221,9 @@ class ModelViewer extends Component {
                     disabled: false
                 })
             } else{
-                pickableObjects[i].material.color = new THREE.Color(1,1,1);
+                o.material.color = (highlightData.originalMaterials[
+                    o.id
+                    ]).color;
             }
         })
     }
@@ -254,7 +253,6 @@ class ModelViewer extends Component {
                 }, camera);
                 intersects = raycaster.intersectObjects(pickableObjects, false);
 
-
                 if (intersects.length > 0) {
                     const intersect = intersects.find((el) => {
                         return hiddenObjects.indexOf(el.object) === -1;
@@ -280,7 +278,9 @@ class ModelViewer extends Component {
                         pickableObjects[i].parent.visible = false;
 
                     } else{
-                        pickableObjects[i].material.color = new THREE.Color(1,1,1);
+                        o.material.color = (highlightData.originalMaterials[
+                            o.id
+                            ]).color;
                     }
                 })
                 break;
