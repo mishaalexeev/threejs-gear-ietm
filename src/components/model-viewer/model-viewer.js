@@ -1,13 +1,11 @@
-import React, { Component } from "react";
+import React, {Component} from "react";
 import * as THREE from "three";
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {DRACOLoader} from "three/examples/jsm/loaders/DRACOLoader";
 import withStores from "../../hocs/withStores";
 
-import { Menu, Dropdown } from 'antd';
-
-import { EyeInvisibleOutlined , StarFilled, StarTwoTone } from '@ant-design/icons';
-
+import {Menu, Dropdown} from 'antd';
+import {EyeInvisibleOutlined, StarFilled, StarTwoTone} from '@ant-design/icons';
 
 class ModelViewer extends Component {
     constructor(props) {
@@ -15,25 +13,26 @@ class ModelViewer extends Component {
         this.state = {
             widthCoefficient: 0.625,
             disabled: true,
-            eventDropdownMenu: null
+            eventDropdownMenu: null,
         }
+        this.store = props.stores.modelStore;
     }
 
     loadViewer = (scene, axesHelper, light, renderer, camera, highlightData) => {
         scene.add(axesHelper)
 
         const ambientLight = new THREE.AmbientLight();
-        const directionalLight1 = new THREE.DirectionalLight(new THREE.Color('hsl(64, 33%, 83%)'),0.8);
+        const directionalLight1 = new THREE.DirectionalLight(new THREE.Color('hsl(64, 33%, 83%)'), 0.8);
         directionalLight1.position.set(-100, 0, -100);
-                
-        const directionalLight2 = new THREE.DirectionalLight(new THREE.Color('hsl(64, 33%, 83%)'),0.8);
+
+        const directionalLight2 = new THREE.DirectionalLight(new THREE.Color('hsl(64, 33%, 83%)'), 0.8);
         directionalLight2.position.set(100, 100, -100);
 
         scene.add(ambientLight, directionalLight1, directionalLight2);
-       
+
         camera.position.z = 250;
         camera.position.x = 250;
-        
+
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.setSize(window.innerWidth * this.state.widthCoefficient, window.innerHeight);
         document.body.appendChild(renderer.domElement);
@@ -59,33 +58,31 @@ class ModelViewer extends Component {
 
                             const mat = m.material.clone();
                             m.material = mat.clone();
-                            //console.log(m.parent.name);
 
                             highlightData.originalMaterials[m.id] = mat;
 
                         }
-                    })
-
+                    });
                     scene.add(gltf.scene);
                     res();
                 },
                 (xhr) => {
-                    console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
                 },
                 (error) => {
                     console.log(error);
+                    rej();
                 }
             );
-        }).then(()=> {
+        }).then(() => {
 
         })
     }
 
     componentDidMount() {
-        const { modelStore } = this.props.stores;
-        modelStore.initializeViewer(window);
-        const { scene, axesHelper, light, renderer, controls, camera, highlightData } = modelStore.viewerData;
-        this.loadViewer(scene, axesHelper, light, renderer, camera, highlightData);
+        this.store.initializeViewer(window);
+        const {scene, axesHelper, light, renderer, controls, camera} = this.store.viewerData;
+        this.loadViewer(scene, axesHelper, light, renderer, camera, this.store.highlightData);
 
         // Добавление слушателя на изменения размера окна для изменения aspect камеры и размеров viewer.
         const onWindowResize = () => {
@@ -112,59 +109,31 @@ class ModelViewer extends Component {
     }
 
     onMouseMove = (event) => {
-        const { viewerData } = this.props.stores.modelStore;
-        let { selectedPart, hiddenObjects } = this.props.stores.modelStore;
-        const { renderer, camera, highlightData } = viewerData;
-        let { pickableObjects, intersectedObject, raycaster, intersects } = highlightData;
-        
-        const offset = {
-            left: document.querySelector(".ant-col-4").offsetWidth,
-            right: document.querySelector(".ant-col-5").offsetWidth,
-        }
-       
-        raycaster.setFromCamera({
-            x: ((event.clientX - offset.left) / renderer.domElement.clientWidth) * 2 - 1,
-            y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
-            z: 0.5
-        }, camera);
-        intersects = raycaster.intersectObjects(pickableObjects, false);
+        const {viewerData, getIntersects} = this.store;
+        let {selectedPart, hiddenObjects, highlightData, intersectedObject} = this.store;
+        let {pickableObjects, raycaster, intersects} = highlightData;
 
-        if (intersects.length > 0) {
-            const intersect = intersects.find((el) => {
-                return hiddenObjects.indexOf(el.object) === -1;
-            });
-            if (typeof intersect === "undefined"){
-                this.mount.style.cursor = "default";
-                intersectedObject = null;
-            }
-            else {
-                this.mount.style.cursor = "pointer";
-                intersectedObject = intersect.object;
-            }
-
-        } else {
-            this.mount.style.cursor = "default";
-            intersectedObject = null;
-        }
-
+        intersects = this.store.getIntersects(event.clientX, event.clientY);
+        this.store.setIntersectedObject(intersects);
+        this.mount.style.cursor = intersectedObject ? "pointer" : "default";
 
         pickableObjects.forEach((o, i) => {
             const isSelected = o === selectedPart;
-            if (isSelected){
+            if (isSelected) {
                 //o.material.transparent = false;
             }
 
-            if (intersectedObject && intersectedObject.name === o.name ) {
+            if (intersectedObject && intersectedObject.name === o.name) {
                 o.material.transparent = true;
                 o.material.opacity = 0.8;
                 //this.props.stores.modelStore.hoveredPart = intersectedObject;
-                
-                if (intersectedObject === selectedPart){
+
+                if (intersectedObject === selectedPart) {
                     return;
                 }
                 o.material.color = new THREE.Color("blue");
             } else {
-                if (o === selectedPart){
+                if (o === selectedPart) {
                     return;
                 }
 
@@ -177,50 +146,23 @@ class ModelViewer extends Component {
     }
 
     onModelClick = (event) => {
-        const { modelStore } = this.props.stores;
-        const { renderer, camera, highlightData } = modelStore.viewerData;
-        const { hiddenObjects } = modelStore;
-        let { pickableObjects, intersectedObject, raycaster, intersects } = highlightData;
+        const {renderer, camera} = this.store.viewerData;
+        const {hiddenObjects, highlightData, intersectedObject, selectedPart} = this.store;
+        let {pickableObjects, raycaster} = highlightData;
 
-        const offset = {
-            left: document.querySelector(".ant-col-4").offsetWidth,
-        }
-       
-        raycaster.setFromCamera({
-            x: ((event.clientX - offset.left) / renderer.domElement.clientWidth) * 2 - 1,
-            y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
-            z: 0.5
-        }, camera);
-        intersects = raycaster.intersectObjects(pickableObjects, false);
+        const intersects = this.store.getIntersects(event.clientX, event.clientY);
 
-        if (intersects.length > 0) {
-            const intersect = intersects.find((el) => {
-                return hiddenObjects.indexOf(el.object) === -1;
-            });
-
-            if (typeof intersect === "undefined"){
-                this.mount.style.cursor = "default";
-                intersectedObject = null;
-            }
-            else {
-                this.mount.style.cursor = "pointer";
-                intersectedObject = intersect.object;
-            }
-
-        } else {
-            intersectedObject = null;
-            return
-        }
+        this.store.setSelectedObject(intersects);
+        this.mount.style.cursor = intersectedObject ? "pointer" : "default";
 
         pickableObjects.forEach((o, i) => {
-            if (intersectedObject && intersectedObject.name === o.name) {
-                modelStore.selectedPart = pickableObjects[i];
+            if (selectedPart && intersectedObject.name === o.name) {
                 pickableObjects[i].material.transparent = true;
                 pickableObjects[i].material.color = new THREE.Color('#df1b1b');
                 this.setState({
                     disabled: false
                 })
-            } else{
+            } else {
                 o.material.color = (highlightData.originalMaterials[
                     o.id
                     ]).color;
@@ -233,36 +175,30 @@ class ModelViewer extends Component {
     }
 
     menuItemClicked = (e) => {
-        const { modelStore } = this.props.stores;
-        const { hiddenObjects } = modelStore;
-        const { renderer, camera, highlightData } = modelStore.viewerData;
-        let { pickableObjects, intersectedObject, raycaster, intersects } = highlightData;
+        const {hiddenObjects, highlightData} = this.store;
+        const {renderer, camera} = this.store.viewerData;
+        let {pickableObjects, intersectedObject, raycaster, intersects} = highlightData;
 
-        const offset = {
-            left: document.querySelector(".ant-col-4").offsetWidth,
-        }
 
         switch (e.key) {
 
             case "1":
                 const event = e.domEvent;
-                raycaster.setFromCamera({
-                    x: ((event.clientX - offset.left) / renderer.domElement.clientWidth) * 2 - 1,
-                    y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
-                    z: 0.5
-                }, camera);
-                intersects = raycaster.intersectObjects(pickableObjects, false);
+
+                intersects = this.store.getIntersects(event.clientX, event.clientY);
+                this.store.setIntersectedObject(intersects);
+                this.mount.style.cursor = intersectedObject ? "pointer" : "default";
+
 
                 if (intersects.length > 0) {
                     const intersect = intersects.find((el) => {
                         return hiddenObjects.indexOf(el.object) === -1;
                     });
 
-                    if (typeof intersect === "undefined"){
+                    if (typeof intersect === "undefined") {
                         this.mount.style.cursor = "default";
                         intersectedObject = null;
-                    }
-                    else {
+                    } else {
                         this.mount.style.cursor = "pointer";
                         intersectedObject = intersect.object;
                         hiddenObjects.push(intersectedObject);
@@ -276,8 +212,9 @@ class ModelViewer extends Component {
                 pickableObjects.forEach((o, i) => {
                     if (intersectedObject && intersectedObject.name === o.name) {
                         pickableObjects[i].parent.visible = false;
+                        this.store.hiddenObjects.push(o);
 
-                    } else{
+                    } else {
                         o.material.color = (highlightData.originalMaterials[
                             o.id
                             ]).color;
@@ -297,7 +234,7 @@ class ModelViewer extends Component {
     }
 
     dropdownVisibleChange = (flag) => {
-        if (flag){
+        if (flag) {
 
         }
     }
@@ -305,11 +242,11 @@ class ModelViewer extends Component {
     render() {
         const menu = (
             <Menu onClick={this.menuItemClicked}>
-              <Menu.Item key="1" icon={<EyeInvisibleOutlined/>}>Скрыть</Menu.Item>
-              <Menu.Item key="2" icon={<StarFilled />}>Изолировать</Menu.Item>
-              <Menu.Item key="3" icon={<StarTwoTone />}>Выделить</Menu.Item>
+                <Menu.Item key="1" icon={<EyeInvisibleOutlined/>}>Скрыть</Menu.Item>
+                <Menu.Item key="2" icon={<StarFilled/>}>Изолировать</Menu.Item>
+                <Menu.Item key="3" icon={<StarTwoTone/>}>Выделить</Menu.Item>
             </Menu>
-          );
+        );
 
         return (
             <Dropdown overlay={menu} trigger={['contextMenu']}
