@@ -4,8 +4,9 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {DRACOLoader} from "three/examples/jsm/loaders/DRACOLoader";
 import withStores from "../../hocs/withStores";
 
-import {Menu, Dropdown} from 'antd';
+import {Menu, Dropdown, Spin} from 'antd';
 import {EyeInvisibleOutlined, StarFilled, StarTwoTone} from '@ant-design/icons';
+import "./model-viewer.css";
 
 class ModelViewer extends Component {
     constructor(props) {
@@ -14,6 +15,7 @@ class ModelViewer extends Component {
             widthCoefficient: 0.625,
             disabled: true,
             eventDropdownMenu: null,
+            isLoading: true
         }
         this.store = props.stores.modelStore;
     }
@@ -75,7 +77,9 @@ class ModelViewer extends Component {
                 }
             );
         }).then(() => {
-
+           this.setState({
+               isLoading: false
+           })
         })
     }
 
@@ -249,10 +253,12 @@ class ModelViewer extends Component {
         );
 
         return (
-            <Dropdown overlay={menu} trigger={['contextMenu']}
-                      onVisibleChange={this.dropdownVisibleChange}>
-                <div ref={ref => (this.mount = ref)} onMouseMove={this.onMouseMove} onDoubleClick={this.onModelClick}/>
-            </Dropdown>
+            <Spin spinning={this.state.isLoading} size="large">
+                <Dropdown overlay={menu} trigger={['contextMenu']}
+                          onVisibleChange={this.dropdownVisibleChange}>
+                    <div ref={ref => (this.mount = ref)} onMouseMove={this.onMouseMove} onDoubleClick={this.onModelClick}/>
+                </Dropdown>
+            </Spin>
         )
     }
 }
