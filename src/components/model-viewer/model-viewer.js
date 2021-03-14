@@ -254,10 +254,12 @@ class ModelViewer extends Component {
 
         return (
             <Spin spinning={this.state.isLoading} size="large">
-                <Dropdown overlay={menu} trigger={['contextMenu']}
-                          onVisibleChange={this.dropdownVisibleChange}>
+                <Dropdown overlay={menu} trigger={['contextMenu']}>
                     <div ref={ref => (this.mount = ref)} onMouseMove={this.onMouseMove} onDoubleClick={this.onModelClick}/>
                 </Dropdown>
+
+                <ModelViewerTools/>
+
             </Spin>
         )
     }

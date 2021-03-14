@@ -7,3 +7,9 @@
     padding: 0 !important;
     margin: 0 !important;
   }
+  .viewer-tools{
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translate(-50%, 0);
+  }
