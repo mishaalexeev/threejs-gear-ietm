@@ -7,6 +7,7 @@ import withStores from "../../hocs/withStores";
 import {Menu, Dropdown, Spin} from 'antd';
 import {EyeInvisibleOutlined, StarFilled, StarTwoTone} from '@ant-design/icons';
 import "./model-viewer.css";
+import ModelViewerTools from "../model-viewer-tools/model-viewer-tools";
 
 class ModelViewer extends Component {
     constructor(props) {
