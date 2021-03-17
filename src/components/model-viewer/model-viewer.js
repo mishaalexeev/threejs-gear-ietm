@@ -6,6 +6,7 @@ import withStores from "../../hocs/withStores";
 
 import {Menu, Dropdown, Spin} from 'antd';
 import {EyeInvisibleOutlined, StarFilled, StarTwoTone} from '@ant-design/icons';
+import ContextMenu from "../contextmenu";
 import "./model-viewer.css";
 import ModelViewerTools from "../model-viewer-tools/model-viewer-tools";
 
@@ -14,8 +15,6 @@ class ModelViewer extends Component {
         super(props);
         this.state = {
             widthCoefficient: 0.625,
-            disabled: true,
-            eventDropdownMenu: null,
             isLoading: true
         }
         this.store = props.stores.modelStore;
@@ -78,9 +77,9 @@ class ModelViewer extends Component {
                 }
             );
         }).then(() => {
-           this.setState({
-               isLoading: false
-           })
+            this.setState({
+                isLoading: false
+            })
         })
     }
 
@@ -179,18 +178,16 @@ class ModelViewer extends Component {
         alert();
     }
 
-    menuItemClicked = (e) => {
+    menuItemClicked = (key, xPos, yPos) => {
         const {hiddenObjects, highlightData} = this.store;
         const {renderer, camera} = this.store.viewerData;
         let {pickableObjects, intersectedObject, raycaster, intersects} = highlightData;
 
-
-        switch (e.key) {
+        switch (key) {
 
             case "1":
-                const event = e.domEvent;
 
-                intersects = this.store.getIntersects(event.clientX, event.clientY);
+                intersects = this.store.getIntersects(xPos, yPos);
                 this.store.setIntersectedObject(intersects);
                 this.mount.style.cursor = intersectedObject ? "pointer" : "default";
 
@@ -238,27 +235,20 @@ class ModelViewer extends Component {
         }
     }
 
-    dropdownVisibleChange = (flag) => {
-        if (flag) {
 
-        }
-    }
 
     render() {
-        const menu = (
-            <Menu onClick={this.menuItemClicked}>
-                <Menu.Item key="1" icon={<EyeInvisibleOutlined/>}>Скрыть</Menu.Item>
-                <Menu.Item key="2" icon={<StarFilled/>}>Изолировать</Menu.Item>
-                <Menu.Item key="3" icon={<StarTwoTone/>}>Выделить</Menu.Item>
-            </Menu>
-        );
-
         return (
             <Spin spinning={this.state.isLoading} size="large">
-                <Dropdown overlay={menu} trigger={['contextMenu']}>
-                    <div ref={ref => (this.mount = ref)} onMouseMove={this.onMouseMove} onDoubleClick={this.onModelClick}/>
-                </Dropdown>
-
+                <ContextMenu
+                    open={this.state.openContextMenu}
+                    menuItemClicked = {this.menuItemClicked}
+                >
+                    <div ref={ref => (this.mount = ref)}
+                         onMouseMove={this.onMouseMove}
+                         onDoubleClick={this.onModelClick}
+                    />
+                </ContextMenu>
                 <ModelViewerTools/>
 
             </Spin>
